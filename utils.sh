@@ -110,19 +110,6 @@ add_server(){
       throw_error "Invalid port number"
     fi
   done
-  # if [ -z "$server_port" ]; then
-  #   server_port=22
-  # else
-  #   while [ "$valid_port" = false ]; do
-  #     read -p "Enter the server port if any or press [ENTER] to skip: " server_port
-  #     if [[ $server_port =~ ^[0-9]+$ ]] || [ -z "$server_port" ]; then
-  #       valid_port=true
-  #     else
-  #       throw_error "Invalid port number"
-  #       read -p "Enter the server port if any or press [ENTER] to skip: " server_port
-  #     fi
-  #   done
-  # fi
 
   # Private key validation
   while [ "$private_key_found" = false ]; do
@@ -130,12 +117,10 @@ add_server(){
 
     if [ -f "$server_private_key" ]; then
       private_key_found=true
-      # generate a server pem file name, using the server_name but removing spaces
       server_pem_file_name=$(echo "$server_name" | sed 's/ //g')
       server_path_to_pem_file=~/odogwu/"$server_pem_file_name".pem
       cp "$server_private_key" "$server_path_to_pem_file"
       chmod 600 "$server_path_to_pem_file"
-      # push the server details to the servers.json file servers array us jq. the data should be in the format: name, ip, username, port, path to pem file
       jq --arg name "$server_name" --arg ip "$server_ip" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers += [{"name": $name, "ip": $ip, "username": $username, "port": $port, "pem_file_path": $pem_file_path}]' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
 
       echo -e "\x1b[1;32m====================================\x1b[0m"
@@ -143,9 +128,5 @@ add_server(){
     throw_error "Private key file not found"
     fi
   done
-
-
-
-
   
 }
