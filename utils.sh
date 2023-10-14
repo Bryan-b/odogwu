@@ -31,9 +31,18 @@ stop_loader() {
 }
 
 throw_error() {
-  echo -e "\x1b[1;31m====================================\x1b[0m"
-  echo -e "\x1b[1;31m#  ERROR: $1  #\x1b[0m"
-  echo -e "\x1b[1;31m====================================\x1b[0m"
+  local message="$1"
+  local error_message="#  ERROR: $message  #"
+  local padding=""
+  local total_width=$((${#error_message}))
+
+  for ((i = 0; i < total_width; i++)); do
+    padding+="="
+  done
+
+  echo -e "\x1b[1;31m$padding\x1b[0m"
+  echo -e "\x1b[1;31m$error_message\x1b[0m"
+  echo -e "\x1b[1;31m$padding\x1b[0m"
 }
 
 option_processor() {
@@ -63,7 +72,6 @@ add_server(){
     if [ -f ~/odogwu/servers.json ]; then
       if grep -q "$server_name" ~/odogwu/servers.json; then
         throw_error "Server name already exists"
-        read -p "Enter the your server custom name: " server_name
       else
         name_exists=true
       fi
@@ -79,7 +87,6 @@ add_server(){
       valid_ip=true
     else
       throw_error "Invalid IP address"
-      read -p "Enter the server IP: " server_ip
     fi
   done
 
@@ -90,25 +97,32 @@ add_server(){
       valid_username=true
     else
       throw_error "Invalid username"
-      read -p "Enter the server username: " server_username
     fi
   done
 
   
-  # Server port validation (if any)
-  if [ -z "$server_port" ]; then
-    server_port=22
-  else
-    while [ "$valid_port" = false ]; do
-      read -p "Enter the server port if any or press [ENTER] to skip: " server_port
-      if [[ $server_port =~ ^[0-9]+$ ]] || [ -z "$server_port" ]; then
-        valid_port=true
-      else
-        throw_error "Invalid port number"
-        read -p "Enter the server port if any or press [ENTER] to skip: " server_port
-      fi
-    done
-  fi
+  # prompt forr Server port and  validate (if any)
+  while [ "$valid_port" = false ]; do
+    read -p "Enter the server port if any or press [ENTER] to skip: " server_port
+    if [[ $server_port =~ ^[0-9]+$ ]] || [ -z "$server_port" ]; then
+      valid_port=true
+    else
+      throw_error "Invalid port number"
+    fi
+  done
+  # if [ -z "$server_port" ]; then
+  #   server_port=22
+  # else
+  #   while [ "$valid_port" = false ]; do
+  #     read -p "Enter the server port if any or press [ENTER] to skip: " server_port
+  #     if [[ $server_port =~ ^[0-9]+$ ]] || [ -z "$server_port" ]; then
+  #       valid_port=true
+  #     else
+  #       throw_error "Invalid port number"
+  #       read -p "Enter the server port if any or press [ENTER] to skip: " server_port
+  #     fi
+  #   done
+  # fi
 
   # Private key validation
   while [ "$private_key_found" = false ]; do
@@ -116,10 +130,14 @@ add_server(){
 
     if [ -f "$server_private_key" ]; then
       private_key_found=true
-      cp "$server_private_key" ~/odogwu/"$server_name".pem
-      chmod 600 ~/odogwu/"$server_name".pem
-      # push the server details to the servers.json file servers array us jq
-      jq --arg server_name "$server_name" --arg server_ip "$server_ip" --arg server_username "$server_username" --arg server_port "$server_port" '.servers += [{"name": $server_name, "ip": $server_ip, "username": $server_username, "port": $server_port}]' ~/odogwu/servers.json > ~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
+      # generate a server pem file name, using the server_name but removing spaces
+      server_pem_file_name=$(echo "$server_name" | sed 's/ //g')
+      server_path_to_pem_file=~/odogwu/"$server_pem_file_name".pem
+      cp "$server_private_key" "$server_path_to_pem_file"
+      chmod 600 "$server_path_to_pem_file"
+      # push the server details to the servers.json file servers array us jq. the data should be in the format: name, ip, username, port, path to pem file
+      jq --arg name "$server_name" --arg ip "$server_ip" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers += [{"name": $name, "ip": $ip, "username": $username, "port": $port, "pem_file_path": $pem_file_path}]' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
+
       echo -e "\x1b[1;32m====================================\x1b[0m"
     else
     throw_error "Private key file not found"
