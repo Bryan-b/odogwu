@@ -39,10 +39,11 @@ throw_error() {
   for ((i = 0; i < total_width; i++)); do
     padding+="="
   done
-
+  
   echo -e "\x1b[1;31m$padding\x1b[0m"
   echo -e "\x1b[1;31m$error_message\x1b[0m"
   echo -e "\x1b[1;31m$padding\x1b[0m"
+  echo -e "\n"
 }
 
 option_processor() {
