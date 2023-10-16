@@ -63,6 +63,21 @@ option_processor() {
   esac
 }
 
+
+list_server() {
+  if [ -f ~/odogwu/servers.json ]; then
+    if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
+      echo -e "\x1b[1;32m====================================\x1b[0m"
+      jq -r '.servers | to_entries | .[] | "\(.key + 1). \(.value.name)"' ~/odogwu/servers.json
+      echo -e "\x1b[1;32m====================================\x1b[0m"
+    else
+      throw_error "No server found"
+    fi
+  else
+    throw_error "No server found"
+  fi
+}
+
 add_server(){
   valid_ip=false
   private_key_found=false
