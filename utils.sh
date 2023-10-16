@@ -39,7 +39,7 @@ throw_error() {
   for ((i = 0; i < total_width; i++)); do
     padding+="="
   done
-  
+
   echo -e "\x1b[1;31m$padding\x1b[0m"
   echo -e "\x1b[1;31m$error_message\x1b[0m"
   echo -e "\x1b[1;31m$padding\x1b[0m"
@@ -54,6 +54,9 @@ option_processor() {
   fi
 
   case $option in
+  1)
+    list_server
+    ;;
   2)
     add_server
     ;;
@@ -102,9 +105,9 @@ add_server(){
   done
 
   
-  # prompt forr Server port and  validate (if any)
+  # Server port validation (optional)
   while [ "$valid_port" = false ]; do
-    read -p "Enter the server port if any or press [ENTER] to skip: " server_port
+    read -p "Enter the server port if any or press [ENTER] to skip [default: 22] : " server_port
     if [[ $server_port =~ ^[0-9]+$ ]] || [ -z "$server_port" ]; then
       valid_port=true
     else
