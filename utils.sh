@@ -66,6 +66,8 @@ option_processor() {
 
 list_server() {
   if [ -f ~/odogwu/servers.json ]; then
+    clear
+    tput rmcup
     if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
       echo -e "\x1b[1;32m====================================\x1b[0m"
       jq -r '.servers | to_entries | .[] | "\(.key + 1). \(.value.name)"' ~/odogwu/servers.json
