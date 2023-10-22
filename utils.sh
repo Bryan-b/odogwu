@@ -76,6 +76,17 @@ list_server() {
   else
     throw_error "No server found"
   fi
+  echo -e "\x1b[1;32mPress [esc] to go back to the main menu\x1b[0m"
+  while true; do
+    read -s -n 1 key
+    if [[ $key = $'\e' ]]; then
+      clear
+      cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+      echo -e "\n"
+      option_processor
+    fi
+  done
+
 }
 
 add_server(){
