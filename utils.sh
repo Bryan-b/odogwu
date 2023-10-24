@@ -30,6 +30,36 @@ stop_loader() {
   printf "\b\b\b\b\b"
 }
 
+colored() {
+  local text="$1"
+  local color="${2:-green}"
+  local effect="${3:-0}"
+  
+  case $color in
+  red)
+    echo -e "\x1b[$effect;31m$text\x1b[0m"
+    ;;
+  green)
+    echo -e "\x1b[$effect;32m$text\x1b[0m"
+    ;;
+  blue)
+    echo -e "\x1b[$effect;34m$text\x1b[0m"
+    ;;
+  white)
+    echo -e "\x1b[$effect;37m$text\x1b[0m"
+    ;;
+  yellow)
+    echo -e "\x1b[$effect;33m$text\x1b[0m"
+    ;;
+  magenta)
+    echo -e "\x1b[$effect;35m$text\x1b[0m"
+    ;;
+  cyan)
+    echo -e "\x1b[$effect;36m$text\x1b[0m"
+    ;;
+  esac
+}
+
 throw_error() {
   local message="$1"
   local error_message="#  ERROR: $message  #"
@@ -40,14 +70,14 @@ throw_error() {
     padding+="="
   done
 
-  echo -e "\x1b[1;31m$padding\x1b[0m"
-  echo -e "\x1b[1;31m$error_message\x1b[0m"
-  echo -e "\x1b[1;31m$padding\x1b[0m"
+  echo -e $colored "$padding" "red" "1"
+  echo -e $colored "$error_message" "red" "1"
+  echo -e $colored "$padding" "red" "1"
   echo -e "\n"
 }
 
 option_processor() {
-  read -p "Input an option [1-6 or X] and press [ENTER] to continue: " option
+  read -p "$(colored "Input an option [1-6 or X] and press [ENTER] to continue: ")" option
   if [[ $option != [1-6Xx] ]]; then
     throw_error "Invalid option entered"
     option_processor
@@ -65,9 +95,11 @@ option_processor() {
 
 
 list_server() {
+  clear
+  tput rmcup
+
+  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to go back to the main menu\x1b[0m"
   if [ -f ~/odogwu/servers.json ]; then
-    clear
-    tput rmcup
     if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
       echo -e "\x1b[1;32m====================================\x1b[0m"
       jq -r '.servers | to_entries | .[] | "\(.key + 1). \(.value.name)"' ~/odogwu/servers.json
@@ -78,7 +110,7 @@ list_server() {
   else
     throw_error "No server found"
   fi
-  echo -e "\x1b[1;32mPress [esc] to go back to the main menu\x1b[0m"
+
   while true; do
     read -s -n 1 key
     if [[ $key = $'\e' ]]; then
@@ -100,7 +132,7 @@ add_server(){
 
   # Server name validation
   while [ "$name_exists" = false ]; do
-    read -p "Enter the your server custom name: " server_name
+    read -p $(colored "Enter the your server custom name: " "white" "1") server_name 
     if [ -f ~/odogwu/servers.json ]; then
       if grep -q "$server_name" ~/odogwu/servers.json; then
         throw_error "Server name already exists"
