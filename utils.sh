@@ -15,11 +15,19 @@ spinner() {
   printf "    \b\b\b\b\b"
 }
 
-start_loader() {
+show_loader_for() {
   local how_long="${1:-5}"
   (spinner $$) & LOADER_PID=$!
   sleep "$how_long"
-  stop_loader
+  if [ -n "$LOADER_PID" ]; then
+    kill $LOADER_PID 2>/dev/null
+    wait $LOADER_PID 2>/dev/null
+  fi
+  printf "\b\b\b\b\b"
+}
+
+start_loader() {
+  (spinner $$) & LOADER_PID=$!
 }
 
 stop_loader() {
@@ -60,26 +68,32 @@ colored() {
   esac
 }
 
-throw_error() {
+message() {
   local message="$1"
-  local error_message="#  ERROR: $message  #"
+  local status="${2:-SUCCESS}"
+  local colored="green"
+  local message_content="#  $status: $message  #"
   local padding=""
-  local total_width=$((${#error_message}))
+  local total_width=$((${#message_content}))
 
   for ((i = 0; i < total_width; i++)); do
     padding+="="
   done
+  
+  if [ "$status" = "ERROR" ]; then
+    colored="red"
+  fi
 
-  echo -e $colored "$padding" "red" "1"
-  echo -e $colored "$error_message" "red" "1"
-  echo -e $colored "$padding" "red" "1"
+  echo -e $colored "$padding" "$colored" "1"
+  echo -e $colored "$message_content" $colored "1"
+  echo -e $colored "$padding" $colored "1"
   echo -e "\n"
 }
 
 option_processor() {
   read -p "$(colored "Input an option [1-6 or X] and press [ENTER] to continue: ")" option
   if [[ $option != [1-6Xx] ]]; then
-    throw_error "Invalid option entered"
+    message "Invalid option entered" "ERROR"
     option_processor
   fi
 
@@ -105,10 +119,10 @@ list_server() {
       jq -r '.servers | to_entries | .[] | "\(.key + 1). \(.value.name)"' ~/odogwu/servers.json
       echo -e "\x1b[1;32m====================================\x1b[0m"
     else
-      throw_error "No server found"
+      throw_error "No server found" "ERROR"
     fi
   else
-    throw_error "No server found"
+    throw_error "No server found" "ERROR"
   fi
 
   while true; do
@@ -124,18 +138,32 @@ list_server() {
 }
 
 add_server(){
+  clear
+  tput rmcup
+
   valid_ip=false
   private_key_found=false
   name_exists=false
   valid_username=false
   valid_port=false
 
+  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to cancel and go back to the main menu\x1b[0m"
+  while true; do
+    read -s -n 1 key
+    if [[ $key = $'\e' ]]; then
+      clear
+      cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+      echo -e "\n"
+      option_processor
+    fi
+  done
+
   # Server name validation
   while [ "$name_exists" = false ]; do
-    read -p $(colored "Enter the your server custom name: " "white" "1") server_name 
+    read -p "$(colored "Enter the your server custom name: " "white" "1")" server_name 
     if [ -f ~/odogwu/servers.json ]; then
       if grep -q "$server_name" ~/odogwu/servers.json; then
-        throw_error "Server name already exists"
+        throw_error "Server name already exists" "ERROR"
       else
         name_exists=true
       fi
@@ -150,7 +178,7 @@ add_server(){
     if [[ $server_ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
       valid_ip=true
     else
-      throw_error "Invalid IP address"
+      throw_error "Invalid IP address" "ERROR"
     fi
   done
 
@@ -160,18 +188,18 @@ add_server(){
     if [[ $server_username =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
       valid_username=true
     else
-      throw_error "Invalid username"
+      throw_error "Invalid username" "ERROR"
     fi
   done
 
   
   # Server port validation (optional)
   while [ "$valid_port" = false ]; do
-    read -p "Enter the server port if any or press [ENTER] to skip [default: 22] : " server_port
+    read -p "Enter the server port if any or press [ENTER] to skip [default: $(colored "22" "blue" "3")] : " server_port
     if [[ $server_port =~ ^[0-9]+$ ]] || [ -z "$server_port" ]; then
       valid_port=true
     else
-      throw_error "Invalid port number"
+      throw_error "Invalid port number" "ERROR"
     fi
   done
 
@@ -187,9 +215,13 @@ add_server(){
       chmod 600 "$server_path_to_pem_file"
       jq --arg name "$server_name" --arg ip "$server_ip" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers += [{"name": $name, "ip": $ip, "username": $username, "port": $port, "pem_file_path": $pem_file_path}]' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
 
-      echo -e "\x1b[1;32m====================================\x1b[0m"
+      start_loader
+
+      # inform the user that the server is undergoing connection test
+      # if the connection is successful, inform the user that the server has been added successfully
+      # if the connection is unsuccessful, inform the user that the server has been added but the connection test failed
     else
-    throw_error "Private key file not found"
+    throw_error "Private key file not found" "ERROR"
     fi
   done
   
