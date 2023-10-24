@@ -226,3 +226,16 @@ add_server(){
   done
   
 }
+
+connection_tester() {
+  local server_name="$1"
+  local server_ip="$2"
+  local server_username="$3"
+  local server_port="$4"
+  local server_path_to_pem_file="$5"
+
+  conn_success_message=message "Yippy!!! Connection successful" "SUCCESS"
+  conn_failure_message=message "Connection failed; Incorrect Server Credentials" "ERROR"
+
+  ssh -i "$server_path_to_pem_file" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5 "$server_username"@"$server_ip" -p "$server_port" "echo 2>&1" && echo -e "$conn_success_message" || echo -e "$conn_failure_message"
+}
