@@ -71,7 +71,7 @@ colored() {
 message() {
   local message="$1"
   local status="${2:-SUCCESS}"
-  local colored="green"
+  local status_color="green"
   local message_content="#  $status: $message  #"
   local padding=""
   local total_width=$((${#message_content}))
@@ -81,12 +81,12 @@ message() {
   done
   
   if [ "$status" = "ERROR" ]; then
-    colored="red"
+    status_color="red"
   fi
 
-  echo -e $colored "$padding" "$colored" "1"
-  echo -e $colored "$message_content" $colored "1"
-  echo -e $colored "$padding" $colored "1"
+  echo -e "$(colored "$padding" "$status_color" "1")"
+  echo -e "$(colored "$message_content" "$status_color" "1")"
+  echo -e "$(colored "$padding" "$status_color" "1")"
   echo -e "\n"
 }
 
@@ -216,6 +216,7 @@ add_server(){
       jq --arg name "$server_name" --arg ip "$server_ip" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers += [{"name": $name, "ip": $ip, "username": $username, "port": $port, "pem_file_path": $pem_file_path}]' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
 
       start_loader
+      connection_tester "$server_name" "$server_ip" "$server_username" "$server_port" "$server_path_to_pem_file"
 
       # inform the user that the server is undergoing connection test
       # if the connection is successful, inform the user that the server has been added successfully
@@ -234,8 +235,8 @@ connection_tester() {
   local server_port="$4"
   local server_path_to_pem_file="$5"
 
-  conn_success_message=message "Yippy!!! Connection successful" "SUCCESS"
-  conn_failure_message=message "Connection failed; Incorrect Server Credentials" "ERROR"
+  conn_success_message=$(message "Yippy!!! Connection successful" "SUCCESS")
+  conn_failure_message=$(message "Oops!!! Connection failed" "ERROR")
 
   ssh -i "$server_path_to_pem_file" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5 "$server_username"@"$server_ip" -p "$server_port" "echo 2>&1" && echo -e "$conn_success_message" || echo -e "$conn_failure_message"
 }
