@@ -87,7 +87,6 @@ message() {
   echo -e "$(colored "$padding" "$status_color" "1")"
   echo -e "$(colored "$message_content" "$status_color" "1")"
   echo -e "$(colored "$padding" "$status_color" "1")"
-  echo -e "\n"
 }
 
 option_processor() {
@@ -119,10 +118,10 @@ list_server() {
       jq -r '.servers | to_entries | .[] | "\(.key + 1). \(.value.name)"' ~/odogwu/servers.json
       echo -e "\x1b[1;32m====================================\x1b[0m"
     else
-      throw_error "No server found" "ERROR"
+      message "No server found" "ERROR"
     fi
   else
-    throw_error "No server found" "ERROR"
+    message "No server found" "ERROR"
   fi
 
   while true; do
@@ -141,29 +140,22 @@ add_server(){
   clear
   tput rmcup
 
-  valid_ip=false
+
+  valid_ip_or_domain=false
   private_key_found=false
   name_exists=false
   valid_username=false
   valid_port=false
 
-  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to cancel and go back to the main menu\x1b[0m"
-  while true; do
-    read -s -n 1 key
-    if [[ $key = $'\e' ]]; then
-      clear
-      cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
-      echo -e "\n"
-      option_processor
-    fi
-  done
+  echo -e "$(colored 'Press' 'green' '0') $(colored '[ctrl + q]' 'white' '3') $(colored 'to cancel and go back to the main menu' 'green' '0')"
+  echo -e "\n"
 
   # Server name validation
   while [ "$name_exists" = false ]; do
-    read -p "$(colored "Enter the your server custom name: " "white" "1")" server_name 
+    read -p "$(colored "1. Enter the your server custom name: " "white" "1")" server_name 
     if [ -f ~/odogwu/servers.json ]; then
       if grep -q "$server_name" ~/odogwu/servers.json; then
-        throw_error "Server name already exists" "ERROR"
+        message "Server name already exists" "ERROR"
       else
         name_exists=true
       fi
@@ -171,41 +163,48 @@ add_server(){
       name_exists=true
     fi
   done
+  echo -e "\n"
 
   # Server IP validation
-  while [ "$valid_ip" = false ]; do
-    read -p "Enter the server IP: " server_ip
-    if [[ $server_ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      valid_ip=true
+  while [ "$valid_ip_or_domain" = false ]; do
+    read -p "$(colored "2. Enter the server IP or domain name: " "white" "1")" server_ip_or_domain
+    if [[ $server_ip_or_domain =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ || $server_ip_or_domain =~ ^[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$ ]]; then
+      valid_ip_or_domain=true
     else
-      throw_error "Invalid IP address" "ERROR"
+      message "Invalid IP address or domain" "ERROR"
     fi
   done
+  echo -e "\n"
 
   # Server username validation
   while [ "$valid_username" = false ]; do
-    read -p "Enter the server username: " server_username
+    read -p "$(colored "3. Enter the server username: " "white" "1")" server_username
     if [[ $server_username =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
       valid_username=true
     else
-      throw_error "Invalid username" "ERROR"
+      message "Invalid username" "ERROR"
     fi
   done
-
+  echo -e "\n"
   
   # Server port validation (optional)
   while [ "$valid_port" = false ]; do
-    read -p "Enter the server port if any or press [ENTER] to skip [default: $(colored "22" "blue" "3")] : " server_port
-    if [[ $server_port =~ ^[0-9]+$ ]] || [ -z "$server_port" ]; then
-      valid_port=true
+    read -p "$(colored "4. Enter the server port if any or press [ENTER] to skip [default: 22]: " "white" "1")" user_input
+    if [ -z "$user_input" ]; then
+        server_port=22
+        valid_port=true
+    elif [[ $user_input =~ ^[0-9]+$ ]]; then
+        server_port=$user_input
+        valid_port=true
     else
-      throw_error "Invalid port number" "ERROR"
+        message "Invalid port number" "ERROR"
     fi
   done
+  echo -e "\n"
 
   # Private key validation
   while [ "$private_key_found" = false ]; do
-    read -p "Enter the path to the private key file: " server_private_key
+    read -p "$(colored "5. Enter the path to the private key file: " "white" "1")" server_private_key
 
     if [ -f "$server_private_key" ]; then
       private_key_found=true
@@ -213,30 +212,38 @@ add_server(){
       server_path_to_pem_file=~/odogwu/"$server_pem_file_name".pem
       cp "$server_private_key" "$server_path_to_pem_file"
       chmod 600 "$server_path_to_pem_file"
-      jq --arg name "$server_name" --arg ip "$server_ip" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers += [{"name": $name, "ip": $ip, "username": $username, "port": $port, "pem_file_path": $pem_file_path}]' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
 
       start_loader
-      connection_tester "$server_name" "$server_ip" "$server_username" "$server_port" "$server_path_to_pem_file"
+      connection_tester "$server_ip_or_domain" "$server_username" "$server_port" "$server_path_to_pem_file"
 
-      # inform the user that the server is undergoing connection test
-      # if the connection is successful, inform the user that the server has been added successfully
-      # if the connection is unsuccessful, inform the user that the server has been added but the connection test failed
+      if [ $? -eq 0 ]; then
+        stop_loader
+        message "Connection Successful" "SUCCESS"
+        jq --arg name "$server_name" --arg ip_or_domain "$server_ip_or_domain" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers += [{"name": $name, "ip": $ip, "username": $username, "port": $port, "pem_file_path": $pem_file_path}]' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
+      else
+        stop_loader
+        message "Connection Failed" "ERROR"
+        rm "$server_path_to_pem_file"
+        private_key_found=false
+      fi
     else
-    throw_error "Private key file not found" "ERROR"
+    message "Private key file not found" "ERROR"
     fi
   done
   
 }
 
 connection_tester() {
-  local server_name="$1"
-  local server_ip="$2"
-  local server_username="$3"
-  local server_port="$4"
-  local server_path_to_pem_file="$5"
+  local server_ip="$1"
+  local server_username="$2"
+  local server_port="$3"
+  local server_path_to_pem_file="$4"
 
-  conn_success_message=$(message "Yippy!!! Connection successful" "SUCCESS")
-  conn_failure_message=$(message "Oops!!! Connection failed" "ERROR")
-
-  ssh -i "$server_path_to_pem_file" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5 "$server_username"@"$server_ip" -p "$server_port" "echo 2>&1" && echo -e "$conn_success_message" || echo -e "$conn_failure_message"
+  if ssh -i "$server_path_to_pem_file" -o StrictHostKeyChecking=no "$server_username"@"$server_ip" -p "$server_port" exit 2>/dev/null; then
+    echo "SSH connection to $server_ip succeeded."
+    return 0
+  else
+    echo "SSH connection to $server_ip failed."
+    return 1
+  fi
 }
