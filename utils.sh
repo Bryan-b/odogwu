@@ -106,6 +106,15 @@ option_processor() {
   esac
 }
 
+press_any_key_to_show_menu() {
+  read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
+    clear
+    cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+    echo -e "\n"
+    option_processor
+  )
+}
+
 
 list_server() {
   clear
@@ -226,12 +235,7 @@ add_server(){
         message "Server added successfully" "SUCCESS"
         
         echo -e "\n"
-        read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
-          clear
-          cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
-          echo -e "\n"
-          option_processor
-        )
+        press_any_key_to_show_menu
       else
         stop_loader
         message "Connection Failed" "ERROR"
