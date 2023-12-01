@@ -90,7 +90,7 @@ message() {
 }
 
 option_processor() {
-  read -p "$(colored "Input an option [1-6 or X] and press [ENTER] to continue: ")" option
+  read -p "$(colored "Input an option $(colored '[1-6 or X]' 'white' '3') and press $(colored '[ENTER]' 'white' '3') to continue: ")" option
   if [[ $option != [1-6Xx] ]]; then
     message "Invalid option entered" "ERROR"
     option_processor
@@ -118,16 +118,15 @@ press_any_key_to_show_menu() {
   )
 }
 
-
 list_server() {
   clear
   tput rmcup
 
-  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to go back to the main menu\x1b[0m"
+  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '5') to go back to the main menu\x1b[0m"
   if [ -f ~/odogwu/servers.json ]; then
     if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
       echo -e "\x1b[1;32m====================================\x1b[0m"
-      jq -r '.servers | to_entries | .[] | "\(.key + 1). \(.value.name)"' ~/odogwu/servers.json
+      jq -r '.servers | to_entries | .[] | " [\(.key + 1)] +=+  \(.value.name)"' ~/odogwu/servers.json
       echo -e "\x1b[1;32m====================================\x1b[0m"
     else
       message "No server found" "ERROR"
