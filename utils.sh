@@ -103,6 +103,9 @@ option_processor() {
   2)
     add_server
     ;;
+  [xX])
+    exit 0
+    ;;
   esac
 }
 
