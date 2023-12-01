@@ -224,6 +224,14 @@ add_server(){
         jq --arg name "$server_name" --arg ip_or_domain "$server_ip_or_domain" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers += [{"name": $name, "ip": $ip_or_domain, "username": $username, "port": $port, "pem_file_path": $pem_file_path}]' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
         show_loader_for 3
         message "Server added successfully" "SUCCESS"
+        
+        echo -e "\n"
+        read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
+          clear
+          cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+          echo -e "\n"
+          option_processor
+        )
       else
         stop_loader
         message "Connection Failed" "ERROR"
