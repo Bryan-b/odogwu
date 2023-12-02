@@ -103,6 +103,9 @@ option_processor() {
   2)
     add_server
     ;;
+  3)
+    login_to_server
+    ;;
   [xX])
     exit 0
     ;;
@@ -120,9 +123,8 @@ press_any_key_to_show_menu() {
 
 list_server() {
   clear
-  tput rmcup
 
-  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '5') to go back to the main menu\x1b[0m"
+  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to go back to the main menu\x1b[0m"
   if [ -f ~/odogwu/servers.json ]; then
     if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
       echo -e "\x1b[1;32m====================================\x1b[0m"
@@ -150,7 +152,6 @@ list_server() {
 add_server(){
   clear
   tput rmcup
-
 
   valid_ip_or_domain=false
   private_key_found=false
@@ -263,5 +264,68 @@ connection_tester() {
   else
     echo "SSH connection to $server_ip failed."
     return 1
+  fi
+}
+
+connect_to_server() {
+  local server_ip="$1"
+  local server_username="$2"
+  local server_port="$3"
+  local server_path_to_pem_file="$4"
+
+  ssh -i "$server_path_to_pem_file" -o StrictHostKeyChecking=no "$server_username"@"$server_ip" -p "$server_port"
+}
+
+login_to_server() {
+  clear
+  echo -e "\x1b[1;32mSelect a server to login to or [X] to go back to the main menu\x1b[0m"
+  if [ -f ~/odogwu/servers.json ]; then
+    if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
+      echo -e "\x1b[1;32m====================================\x1b[0m"
+      jq -r '.servers | to_entries | .[] | " [\(.key + 1)] +=+  \(.value.name)"' ~/odogwu/servers.json
+      echo -e "\x1b[1;32m====================================\x1b[0m"
+    else
+      message "No server found" "ERROR"
+    fi
+  else
+    message "No server found" "ERROR"
+  fi
+
+  read -p "$(colored "Input a server number and press $(colored '[ENTER]' 'white' '3') to continue or press $(colored '[X]' 'white' '3') to go back to the main menu: ")" server_number
+
+  if [[ $server_number = [xX] ]]; then
+    clear
+    cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+    echo -e "\n"
+    option_processor
+  else
+    if [[ $server_number =~ ^[0-9]+$ ]]; then
+
+      if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
+
+        if [ "$server_number" -le "$(jq '.servers | length' ~/odogwu/servers.json)" ]; then
+
+          server_name=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].name' ~/odogwu/servers.json)
+          server_ip=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].ip' ~/odogwu/servers.json)
+          server_username=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].username' ~/odogwu/servers.json)
+          server_port=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].port' ~/odogwu/servers.json)
+          server_pem_file_path=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].pem_file_path' ~/odogwu/servers.json)
+          
+          clear
+          show_loader_for 10
+          connect_to_server "$server_ip" "$server_username" "$server_port" "$server_pem_file_path"
+        
+        else
+          message "Invalid server number" "ERROR"
+          login_to_server
+        fi
+      else
+        message "No server found" "ERROR"
+        login_to_server
+      fi
+    else
+      message "Invalid server number" "ERROR"
+      login_to_server
+    fi
   fi
 }
