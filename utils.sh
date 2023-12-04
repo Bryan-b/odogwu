@@ -98,7 +98,7 @@ option_processor() {
 
   case $option in
   1)
-    list_server
+    show_server
     ;;
   2)
     add_server
@@ -124,10 +124,7 @@ press_any_key_to_show_menu() {
   )
 }
 
-list_server() {
-  clear
-
-  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to go back to the main menu\x1b[0m"
+server_list() {
   if [ -f ~/odogwu/servers.json ]; then
     if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
       echo -e "\x1b[1;32m====================================\x1b[0m"
@@ -139,6 +136,13 @@ list_server() {
   else
     message "No server found" "ERROR"
   fi
+}
+
+show_server() {
+  clear
+
+  echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to go back to the main menu\x1b[0m"
+  server_list
 
   while true; do
     read -s -n 1 key
@@ -281,17 +285,7 @@ connect_to_server() {
 login_to_server() {
   clear
   echo -e "\x1b[1;32mSelect a server to login to or [X] to go back to the main menu\x1b[0m"
-  if [ -f ~/odogwu/servers.json ]; then
-    if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
-      echo -e "\x1b[1;32m====================================\x1b[0m"
-      jq -r '.servers | to_entries | .[] | " [\(.key + 1)] +=+  \(.value.name)"' ~/odogwu/servers.json
-      echo -e "\x1b[1;32m====================================\x1b[0m"
-    else
-      message "No server found" "ERROR"
-    fi
-  else
-    message "No server found" "ERROR"
-  fi
+  server_list
 
   read -p "$(colored "Input a server number and press $(colored '[ENTER]' 'white' '3') to continue or press $(colored '[X]' 'white' '3') to go back to the main menu: ")" server_number
 
@@ -335,17 +329,7 @@ login_to_server() {
 delete_server() {
   clear
   echo -e "\x1b[1;32mSelect a server to delete or [X] to go back to the main menu\x1b[0m"
-  if [ -f ~/odogwu/servers.json ]; then
-    if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
-      echo -e "\x1b[1;32m====================================\x1b[0m"
-      jq -r '.servers | to_entries | .[] | " [\(.key + 1)] +=+  \(.value.name)"' ~/odogwu/servers.json
-      echo -e "\x1b[1;32m====================================\x1b[0m"
-    else
-      message "No server found" "ERROR"
-    fi
-  else
-    message "No server found" "ERROR"
-  fi
+  server_list
 
   read -p "$(colored "Input a server number to delete and press $(colored '[ENTER]' 'white' '3') to continue or press $(colored '[X]' 'white' '3') to go back to the main menu: ")" server_number
 
@@ -360,7 +344,7 @@ delete_server() {
       if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
 
         if [ "$server_number" -le "$(jq '.servers | length' ~/odogwu/servers.json)" ]; then
-          # Delete server from servers.json file with the index+1 as the server number
+
           jq --argjson server_number "$server_number" 'del(.servers[$server_number - 1])' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
           message "Server deleted successfully" "SUCCESS"
           read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
