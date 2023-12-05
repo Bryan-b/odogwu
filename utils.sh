@@ -128,10 +128,50 @@ press_any_key_to_show_menu() {
 }
 
 server_list() {
+  ping_or_no_ping="${1:-no_ping}"
+  can_ping=false
+  
+  if [ "$ping_or_no_ping" = "ping" ]; then
+    can_ping=true
+  fi
+
   if [ -f ~/odogwu/servers.json ]; then
     if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
+
+      start_loader
+
+      declare -a server_names
+      declare -a server_ips
+      declare -a server_usernames
+      declare -a server_ports
+      declare -a server_pem_file_paths
+
+      for ((i = 0; i < $(jq '.servers | length' ~/odogwu/servers.json); i++)); do
+        server_names[$i]=$(jq -r --argjson i "$i" '.servers[$i].name' ~/odogwu/servers.json)
+        server_ips[$i]=$(jq -r --argjson i "$i" '.servers[$i].ip' ~/odogwu/servers.json)
+        server_usernames[$i]=$(jq -r --argjson i "$i" '.servers[$i].username' ~/odogwu/servers.json)
+        server_ports[$i]=$(jq -r --argjson i "$i" '.servers[$i].port' ~/odogwu/servers.json)
+        server_pem_file_paths[$i]=$(jq -r --argjson i "$i" '.servers[$i].pem_file_path' ~/odogwu/servers.json)
+      done
+
+      for ((i = 0; i < $(jq '.servers | length' ~/odogwu/servers.json); i++)); do
+        if [ "$can_ping" = true ]; then
+          if ssh -i "${server_pem_file_paths[$i]}" -o StrictHostKeyChecking=no "${server_usernames[$i]}"@"${server_ips[$i]}" -p "${server_ports[$i]}" exit 2>/dev/null; then
+            server_names[$i]="${server_names[$i]}  ---- $(colored '[\xE2\x9C\x94] Available' 'green' '1') \n $(colored '    IP:Port: ' 'white' '2')$(colored "${server_ips[$i]}:${server_ports[$i]}" 'white' '3') \n $(colored '    Username: ' 'white' '2')$(colored "${server_usernames[$i]}" 'white' '3')"
+          else
+            server_names[$i]="${server_names[$i]}  ---- $(colored '[\xE2\x9C\x98] Unavailable' 'red' '1')"
+          fi
+        else
+          server_names[$i]="${server_names[$i]} ----  \n $(colored '    IP:Port: ' 'white' '2')${server_ips[$i]}:${server_ports[$i]} \n $(colored '    Username: ' 'white' '2')${server_usernames[$i]}"
+        fi
+      done
+
+      stop_loader
+
       echo -e "\x1b[1;32m====================================\x1b[0m"
-      jq -r '.servers | to_entries | .[] | " [\(.key + 1)] +=+  \(.value.name)"' ~/odogwu/servers.json
+      for ((i = 0; i < $(jq '.servers | length' ~/odogwu/servers.json); i++)); do
+        echo -e "\x1b[1;32m[\x1b[0m$(colored "$(($i + 1))" "white" "1")\x1b[1;32m]\x1b[0m $(colored "${server_names[$i]}" "white" "1")"
+      done
       echo -e "\x1b[1;32m====================================\x1b[0m"
     else
       message "No server found" "ERROR"
@@ -145,7 +185,7 @@ show_server() {
   clear
 
   echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to go back to the main menu\x1b[0m"
-  server_list
+  server_list ping
 
   while true; do
     read -s -n 1 key
