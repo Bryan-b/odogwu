@@ -348,7 +348,13 @@ delete_server() {
 
         if [ "$server_number" -le "$(jq '.servers | length' ~/odogwu/servers.json)" ]; then
 
+          server_name=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].name' ~/odogwu/servers.json)
+          server_pem_file_name=$(echo "$server_name" | sed 's/ //g')
+          server_path_to_pem_file=~/odogwu/"$server_pem_file_name".pem
+
           jq --argjson server_number "$server_number" 'del(.servers[$server_number - 1])' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
+          rm "$server_path_to_pem_file"
+
           message "Server deleted successfully" "SUCCESS"
           read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
             clear
