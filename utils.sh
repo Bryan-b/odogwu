@@ -106,6 +106,9 @@ option_processor() {
   3)
     login_to_server
     ;;
+  4)
+    edit_server
+    ;;
   5)
     delete_server
     ;;
@@ -368,6 +371,130 @@ delete_server() {
     else
       message "Invalid server number" "ERROR"
       delete_server
+    fi
+  fi
+}
+
+edit_server() {
+  clear
+  echo -e "\x1b[1;32mSelect a server to edit or [X] to go back to the main menu\x1b[0m"
+  server_list
+
+  read -p "$(colored "Input a server number to edit and press $(colored '[ENTER]' 'white' '3') to continue or press $(colored '[X]' 'white' '3') to go back to the main menu: ")" server_number
+
+  if [[ $server_number = [xX] ]]; then
+    clear
+    cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+    echo -e "\n"
+    option_processor
+  else
+    if [[ $server_number =~ ^[0-9]+$ ]]; then
+
+      if [ "$(jq '.servers | length' ~/odogwu/servers.json)" -gt 0 ]; then
+
+        if [ "$server_number" -le "$(jq '.servers | length' ~/odogwu/servers.json)" ]; then
+
+          server_name=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].name' ~/odogwu/servers.json)
+          server_ip=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].ip' ~/odogwu/servers.json)
+          server_username=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].username' ~/odogwu/servers.json)
+          server_port=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].port' ~/odogwu/servers.json)
+          server_pem_file_path=$(jq -r --argjson server_number "$server_number" '.servers[$server_number - 1].pem_file_path' ~/odogwu/servers.json)
+          
+          clear
+          echo -e "$(colored 'Press' 'green' '0') $(colored '[ctrl + q]' 'white' '3') $(colored 'to cancel and go back to the main menu' 'green' '0')"
+          echo -e "\n"
+
+          # Server name validation
+          while [ "$name_exists" = false ]; do
+            read -p "$(colored "1. Enter the your server custom name or press [ENTER] to leave it unchanged: [current: $server_name] " "white" "1")" server_name
+            if [ -f ~/odogwu/servers.json ]; then
+              if grep -q "$server_name" ~/odogwu/servers.json; then
+                message "Server name already exists" "ERROR"
+              else
+                name_exists=true
+              fi
+            else
+              name_exists=true
+            fi
+          done
+
+          # Server IP validation
+          while [ "$valid_ip_or_domain" = false ]; do
+            read -p "$(colored "2. Enter the server IP or domain name or press [ENTER] to leave it unchanged: [current: $server_ip] " "white" "1")" server_ip_or_domain
+            if [[ $server_ip_or_domain =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ || $server_ip_or_domain =~ ^[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$ ]]; then
+              valid_ip_or_domain=true
+            else
+              message "Invalid IP address or domain" "ERROR"
+            fi
+          done
+
+          # Server username validation
+          while [ "$valid_username" = false ]; do
+            read -p "$(colored "3. Enter the server username or press [ENTER] to leave it unchanged: [current: $server_username] " "white" "1")" server_username
+            if [[ $server_username =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
+              valid_username=true
+            else
+              message "Invalid username" "ERROR"
+            fi
+          done
+
+          # Server port validation (optional)
+          while [ "$valid_port" = false ]; do
+            read -p "$(colored "4. Enter the server port if any or press [ENTER] to leave it unchange [current: $server_port]: " "white" "1")" user_input
+            if [ -z "$user_input" ]; then
+                server_port=22
+                valid_port=true
+            elif [[ $user_input =~ ^[0-9]+$ ]]; then
+                server_port=$user_input
+                valid_port=true
+            else
+                message "Invalid port number" "ERROR"
+            fi
+          done
+
+          # Private key validation
+          while [ "$private_key_found" = false ]; do
+            read -p "$(colored "5. Enter the path to the private key file or press [ENTER] to leave it unchanged:" "white" "1")" server_private_key
+
+            if [ -f "$server_private_key" ]; then
+              private_key_found=true
+              server_pem_file_name=$(echo "$server_name" | sed 's/ //g')
+              server_path_to_pem_file=~/odogwu/"$server_pem_file_name".pem
+              cp "$server_private_key" "$server_path_to_pem_file"
+              chmod 600 "$server_path_to_pem_file"
+
+              clear
+              start_loader
+              connection_tester "$server_ip_or_domain" "$server_username" "$server_port" "$server_path_to_pem_file"
+
+              if [ $? -eq 0 ]; then
+                stop_loader
+                message "Connection Successful" "SUCCESS"
+                show_loader_for 3
+                jq --argjson server_number "$server_number" --arg name "$server_name" --arg ip_or_domain "$server_ip_or_domain" --arg username "$server_username" --arg port "$server_port" --arg pem_file_path "$server_path_to_pem_file" '.servers[$server_number - 1] = {"name": $name, "ip": $ip_or_domain, "username": $username, "port": $port, "pem_file_path": $pem_file_path}' ~/odogwu/servers.json >~/odogwu/servers.json.tmp && mv ~/odogwu/servers.json.tmp ~/odogwu/servers.json
+                show_loader_for 3
+                message "Server edited successfully" "SUCCESS"
+                
+                echo -e "\n"
+                press_any_key_to_show_menu
+              else
+                stop_loader
+                message "Connection Failed" "ERROR"
+                rm "$server_path_to_pem_file"
+                private_key_found=false
+              fi
+            else
+            message "Private key file not found" "ERROR"
+            fi
+          done
+      
+      else
+        message "No server found" "ERROR"
+        edit_server
+      fi
+    else
+      message "Invalid server number" "ERROR"
+      edit_server
     fi
   fi
 }
