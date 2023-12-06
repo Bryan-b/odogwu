@@ -153,7 +153,7 @@ server_list() {
         server_pem_file_paths[$i]=$(jq -r --argjson i "$i" '.servers[$i].pem_file_path' $servers_file)
 
         if [ "$can_ping" = true ]; then
-          if ssh -i "${server_pem_file_paths[$i]}" -o StrictHostKeyChecking=no "${server_usernames[$i]}"@"${server_ips[$i]}" -p "${server_ports[$i]}" exit 2>/dev/null; then
+          if (ssh -i "${server_pem_file_paths[$i]}" -o StrictHostKeyChecking=no "${server_usernames[$i]}"@"${server_ips[$i]}" -p "${server_ports[$i]}" exit 2>/dev/null; then)
             server_names[$i]="${server_names[$i]}  ---- $(colored '[\xE2\x9C\x94] Available' 'green' '1') \n $(colored '    IP:Port: ' 'white' '2')$(colored "${server_ips[$i]}:${server_ports[$i]}" 'white' '3') \n $(colored '    Username: ' 'white' '2')$(colored "${server_usernames[$i]}" 'white' '3')"
           else
             server_names[$i]="${server_names[$i]}  ---- $(colored '[\xE2\x9C\x98] Unavailable' 'red' '1')"
@@ -182,7 +182,7 @@ show_server() {
   clear
 
   echo -e "\x1b[1;32mPress $(colored '[ESC]' 'white' '3') to go back to the main menu\x1b[0m"
-  server_list ping
+  server_list
 
   while true; do
     read -s -n 1 key
