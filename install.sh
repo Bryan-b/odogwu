@@ -15,9 +15,8 @@ download() {
 setup() {
     sudo chmod +x /usr/local/bin/odogwu/odogwu
     sudo chmod +x /usr/local/bin/odogwu/utils.sh
-    sudo chmod +x /usr/local/bin/odogwu/install.sh
 
-    sudo ln -s /usr/local/bin/odogwu/odogwu /usr/local/bin/odogwu/odogwu
+    sudo ln -s /usr/local/bin/odogwu/odogwu /usr/local/bin/odogwu
 
     echo "Odogwu installed successfully!"
     echo "=============================="
