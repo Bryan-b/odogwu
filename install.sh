@@ -3,14 +3,16 @@ download() {
     cd odogwu
     rm -rf .git .gitignore README.md install.sh LICENSE
 
-    sudo rm -rf /usr/local/bin/odogwu/*
-    sudo mv * /usr/local/bin/odogwu
+    if [ ! -d /usr/local/bin/odogwu ]; then
+        sudo mkdir /usr/local/bin/odogwu
+    fi
+    sudo cp * /usr/local/bin/odogwu
 
     cd ..
     rm -rf odogwu
 }
 
-permit() {
+setup() {
     sudo chmod +x /usr/local/bin/odogwu/odogwu
     sudo chmod +x /usr/local/bin/odogwu/utils.sh
     sudo chmod +x /usr/local/bin/odogwu/install.sh
@@ -22,4 +24,4 @@ permit() {
     echo "Run 'odogwu' to get started"
 }
 
-download && permit
+download && setup
