@@ -1,7 +1,12 @@
-create_dir() {
-    if [ ! -d /usr/local/bin/odogwu ]; then
-        sudo mkdir /usr/local/bin/odogwu
-    fi
+download() {
+    git clone https://github.com/Bryan-b/odogwu.git odogwu
+    cd odogwu
+    rm -rf .git .gitignore README.md install.sh LICENSE
+
+    sudo mv * /usr/local/bin/odogwu
+
+    cd ..
+    rm -rf odogwu
 }
 
 replace_all() {
@@ -21,6 +26,6 @@ permit() {
     echo "Run 'odogwu' to get started"
 }
 
-create_dir
+download
 replace_all
 permit
