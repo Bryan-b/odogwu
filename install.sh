@@ -57,4 +57,5 @@ setup() {
     echo "Run 'odogwu' to get started"
 }
 
-download && setup
+download 
+setup
