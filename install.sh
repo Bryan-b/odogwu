@@ -18,24 +18,20 @@ setup() {
 
     sudo ln -s /usr/local/bin/odogwu/odogwu.sh /usr/local/bin/odogwu
 
-    if [ "$(uname)" == "Darwin" ]; then
-        # add to .zshrc and .bashrc
-        echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.zshrc
-        echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.bashrc
-        echo alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh' >> ~/.zshrc
-        echo alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh' >> ~/.bashrc
-        source ~/.zshrc
-        source ~/.bashrc
-    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.bashrc
-        echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.bash_profile
-        echo alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh' >> ~/.bashrc
-        echo alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh' >> ~/.bash_profile
-        source ~/.bashrc
-        source ~/.bash_profile
+    which_shell=$(echo $SHELL)
+    
+    if [ $which_shell = "/bin/zsh" ]; then
+        echo "PATH=$PATH:/usr/local/bin/odogwu" >> ~/.zshrc
+        echo alias odogwu="bash /usr/local/bin/odogwu/odogwu.sh" >> ~/.zshrc
+        echo "source /usr/local/bin/odogwu/odogwu.sh" >> ~/.zshrc
+    elif [ $which_shell = "/bin/bash" ]; then
+        echo "PATH=$PATH:/usr/local/bin/odogwu" >> ~/.bashrc
+        echo alias odogwu="bash /usr/local/bin/odogwu/odogwu.sh" >> ~/.bashrc
+        echo "source /usr/local/bin/odogwu/odogwu.sh" >> ~/.bashrc
     else
-        echo "Invalid choice"
-        exit 1
+        echo "PATH=$PATH:/usr/local/bin/odogwu" >> ~/.bash_profile
+        echo alias odogwu="bash /usr/local/bin/odogwu/odogwu.sh" >> ~/.bash_profile
+        echo "source /usr/local/bin/odogwu/odogwu.sh" >> ~/.bash_profile
     fi
 
     echo "Odogwu installed successfully!"
