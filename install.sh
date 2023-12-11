@@ -28,15 +28,21 @@ setup() {
     echo "=============================="
     read -p "Enter your choice: " choice
 
-    if [ $choice -eq 1 ]; then
+    # Check if $choice is empty or not an integer
+    if [ -z "$choice" ] || ! [[ "$choice" =~ ^[0-9]+$ ]]; then
+        echo "Invalid choice"
+        exit 1
+    fi
+
+    if [ "$choice" -eq 1 ]; then
         echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.bashrc
         alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh'
         source ~/.bashrc
-    elif [ $choice -eq 2 ]; then
+    elif [ "$choice" -eq 2 ]; then
         echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.zshrc
         alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh'
         source ~/.zshrc
-    elif [ $choice -eq 3 ]; then
+    elif [ "$choice" -eq 3 ]; then
         echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.bash_profile
         alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh'
         source ~/.bash_profile
