@@ -18,6 +18,34 @@ setup() {
 
     sudo ln -s /usr/local/bin/odogwu/odogwu.sh /usr/local/bin/odogwu
 
+
+    echo "=============================="
+    echo "Select your shell environment"
+    echo "=============================="
+    echo "1. Bash"
+    echo "2. Zsh"
+    echo "3. Bash Profile"
+    echo "=============================="
+    read -p "Enter your choice: " choice
+
+    if [ $choice -eq 1 ]; then
+        echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.bashrc
+        alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh'
+        source ~/.bashrc
+    elif [ $choice -eq 2 ]; then
+        echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.zshrc
+        alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh'
+        source ~/.zshrc
+    elif [ $choice -eq 3 ]; then
+        echo "export PATH=$PATH:/usr/local/bin/odogwu/odogwu.sh" >> ~/.bash_profile
+        alias odogwu='bash /usr/local/bin/odogwu/odogwu.sh'
+        source ~/.bash_profile
+    else
+        echo "Invalid choice"
+        exit 1
+    fi
+
+
     echo "Odogwu installed successfully!"
     echo "=============================="
     echo "Run 'odogwu' to get started"
