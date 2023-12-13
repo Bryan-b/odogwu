@@ -122,7 +122,7 @@ option_processor() {
 press_any_key_to_show_menu() {
   read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
     clear
-    cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+    welcome_menu | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
     echo -e "\n"
     option_processor
   )
@@ -189,7 +189,7 @@ show_server() {
     read -s -n 1 key
     if [[ $key = $'\e' ]]; then
       clear
-      cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+      welcome_menu | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
       echo -e "\n"
       option_processor
     fi
@@ -332,7 +332,7 @@ login_to_server() {
 
   if [[ $server_number = [xX] ]]; then
     clear
-    cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+    welcome_menu | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
     echo -e "\n"
     option_processor
   else
@@ -376,7 +376,7 @@ delete_server() {
 
   if [[ $server_number = [xX] ]]; then
     clear
-    cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+    welcome_menu | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
     echo -e "\n"
     option_processor
   else
@@ -396,7 +396,7 @@ delete_server() {
           message "Server deleted successfully" "SUCCESS"
           read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
             clear
-            cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+            welcome_menu | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
             echo -e "\n"
             option_processor
           )
@@ -406,7 +406,7 @@ delete_server() {
 
         read -n 1 -s -r -p "$(colored 'Press any key to continue' 'green' '5')" && (
           clear
-          cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+          welcome_menu | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
           echo -e "\n"
           option_processor
         )
@@ -428,7 +428,7 @@ edit_server() {
 
   if [[ $server_number = [xX] ]]; then
     clear
-    cat welcome_menu.txt | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
+    welcome_menu | sed -e 's/\(.*\)/\x1b[1;32m\1\x1b[0m/'
     echo -e "\n"
     option_processor
   else
